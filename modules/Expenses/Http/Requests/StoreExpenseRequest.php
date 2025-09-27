@@ -11,7 +11,7 @@ class StoreExpenseRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'category' => 'required|in:office,travel,meals,supplies,others',
+            'category' => 'required|in:food,transport,utilities,entertainment,other', 
             'expense_date' => 'required|date',
             'notes' => 'nullable|string',
         ];

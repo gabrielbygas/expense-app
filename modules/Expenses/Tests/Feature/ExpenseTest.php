@@ -16,18 +16,19 @@ class ExpenseTest extends TestCase
             'title' => 'Diner',
             'amount' => 50.99,
             'category' => 'food',
-            'expense_date' => '2025-09-26',
+            'expense_date' => '2025-09-26', //'2025-09-26 00:00:00'
         ];
 
         $response = $this->postJson('/api/expenses', $data);
-
         $response->assertStatus(201);
+
+        $data['expense_date'] = '2025-09-26 00:00:00'; //fixing laravel date format
         $this->assertDatabaseHas('expenses', $data);
     }
 
     public function test_can_list_expenses(): void
     {
-        Expense::factory()->create(); // On créera la factory plus tard
+        Expense::factory()->create(); 
         $response = $this->getJson('/api/expenses');
         $response->assertStatus(200);
     }
