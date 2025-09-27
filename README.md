@@ -1,61 +1,228 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Expense Module (Modules/Expenses)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Purpose
+A self-contained Laravel module to manage expenses (CRUD + filters) for Laravel 12 compatibility.
 
-## About Laravel
+## Requirements
+- PHP 8.1+  
+- Composer  
+- MySQL/Postgres/SQLite database  
+- Laravel 12.x
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Installation
+**1. Clone the repository:**
+```bash
+   git clone https://github.com/gabrielbygas/expense-app.git
+   cd expense-app
+   composer install
+```
+**2. Configure environment:**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+**3. Configure the Modules:**
+a. Register the namespace
+```json
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/",
+            "Modules\\Expenses\\": "modules/Expenses/",
+            "Modules\\Expenses\\Database\\Factories\\": "modules/Expenses/Database/Factories/",
+            "Modules\\Expenses\\Database\\Seeders\\": "modules/Expenses/Database/Seeders/"
+        }
+    },
+```
+Then run
+```bash
+composer dump-autoload
+```
+b. Create the Module Service Provider :**`modules/Expenses/Providers/ExpensesServiceProvider.php`** 
+```php
+<?php
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+namespace Modules\Expenses\Providers;
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+use Illuminate\Support\ServiceProvider;
+use Modules\Expenses\Events\ExpenseCreated;
+use Modules\Expenses\Listeners\SendExpenseNotification;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Route;
 
-## Learning Laravel
+class ExpensesServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(base_path('modules/Expenses/Database/Migrations'));
+        //$this->loadRoutesFrom(base_path('modules/Expenses/Routes/api.php'));
+        Route::middleware('api')->prefix('api')->group(function () {
+            $this->loadRoutesFrom(base_path('modules/Expenses/Routes/api.php'));
+        });
+        $this->loadViewsFrom(base_path('modules/Expenses/Resources/views'), 'expenses');
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+        // Events -> listeners (simple binding)
+        $events = $this->app['events'];
+        $events->listen(ExpenseCreated::class, [SendExpenseNotification::class, 'handle']);
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+        //Factories
+        Factory::guessFactoryNamesUsing(function (string $modelName) {
+            return 'Modules\\Expenses\\Database\\Factories\\' . class_basename($modelName) . 'Factory';
+        });
+    }
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    public function register(): void
+    {
+        // Tu peux binder des services ici si besoin
+        $this->app->register(RouteServiceProvider::class);
+    }
+}
+```
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+c. Create the Module Route Provider **`modules/Expenses/Providers/RouteServiceProvider.php`**
+```php
+<?php
 
-### Premium Partners
+namespace Modules\Expenses\Providers;
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Route;
 
-## Contributing
+class RouteServiceProvider extends ServiceProvider
+{
+    protected string $name = 'Expenses';
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    /**
+     * Called before routes are registered.
+     *
+     * Register any model bindings or pattern based filters.
+     */
+    public function boot(): void
+    {
+        parent::boot();
+    }
 
-## Code of Conduct
+    /**
+     * Define the routes for the application.
+     */
+    public function map(): void
+    {
+        $this->mapApiRoutes();
+        $this->mapWebRoutes();
+    }
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    /**
+     * Define the "web" routes for the application.
+     *
+     * These routes all receive session state, CSRF protection, etc.
+     */
+    protected function mapWebRoutes(): void
+    {
+        // with nwidart/laravel-modules
+        // Route::middleware('web')->group(module_path($this->name, '/Routes/web.php'));
+        // without
+        Route::middleware('web')->group(base_path('modules/Expenses/Routes/web.php'));
+    }
 
-## Security Vulnerabilities
+    /**
+     * Define the "api" routes for the application.
+     *
+     * These routes are typically stateless.
+     */
+    protected function mapApiRoutes(): void
+    {
+        // with nwidart/laravel-modules
+        // Route::middleware('api')->prefix('api')->name('api.')->group(module_path($this->name, '/Routes/api.php'));
+        // without
+        Route::middleware('api')->prefix('api')->name('api.')->group(base_path('modules/Expenses/Routes/web.php'));
+    }
+}
+```
+d. Register the module service provider in **`bootstrap/providers.php`**:
+```php
+<?php
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+return [
+    App\Providers\AppServiceProvider::class,
+    App\Providers\ExpensesServiceProvider::class,
+    Modules\Expenses\Providers\ExpensesServiceProvider::class,
+];
+```
+e. Clear Cache and Reload
+```bash
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+php artisan optimize:clear
+```
+Then run
+```bash
+composer dump-autoload
+```
+## Project Structure
+```bash
+modules/Expenses/
+├─ Database/
+│  ├─ Migrations/               # Expense table migration (UUID + enum category)
+│  ├─ Seeders/                  # Seeder with valid category values
+│  └─ Factories/                # Factory with Faker for sample data
+├─ Enums/                       # Category enum
+├─ Events/                      # ExpenseCreated events
+├─ Http/
+│  ├─ Controllers/              # ExpenseController (API CRUD)
+│  ├─ Requests/                 # Store/Update FormRequests (validation rules)
+│  ├─ Resources/                # ExpenseResource
+├─ Listeners/                   # SendExpenseNotification listener
+├─ Models/                      # Expense model (UUID primary key, casts)
+├─ Providers/                   # ModuleServiceProvider (routes, migrations, events)
+├─ Repositories/                # Interface + Eloquent implementation
+├─ Resources                    # API routes (CRUD endpoints)
+├─ Routes/                      # API routes (CRUD endpoints)
+├─ Services/                    # ExpenseService (business logic + events)
+└─ Tests/                       # Feature test examples
 
+```
+
+## Run Migrations and Seeders
+```bash
+php artisan migrate:fresh
+php artisan migrate --seed
+```
+## API Endpoints
+```bash
+| Method | Endpoint                  | Description                      |
+|--------|---------------------------|----------------------------------|
+| GET    | /api/expenses             | List all expenses                |
+| POST   | /api/expenses             | Create an expense                |
+| GET    | /api/expenses/{id}        | Show an expense                  |
+| PUT    | /api/expenses/{id}        | Update an expense                |
+| DELETE | /api/expenses/{id}        | Delete an expense                |
+| GET    | /api/expenses/filter      | Filter by category/date range    |
+```
+## Testing
+Feature test : `Modules/Expenses/Tests/Feature/ExpenseTest.php`.
+```bash
+php artisan test
+```
+## Design Decisions & Common Issues
+- `UUID` used for primary key (id) to meet the brief.
+- No Authentication: As per requirements, authentication is not implemented.
+- Ensure migrations are in `Modules/Expenses/Database/Migrations/` and load it to `ExpensesServiceProvider`.
+- `Category` implemented as enum with fixed values: `food,transport,utilities,entertainment,other`
+- Ensure Seeders is added to `database/seeders/DatabaseSeeder.php`
+- Ensure Factory is loaded to `Modules/Expenses/Providers/ExpensesServiceProvider`
+- Service Layer is mandatory (per brief) → contains business rules and event dispatching.
+- `Events/Listeners` added → `ExpenseCreated` triggers `SendExpenseNotification`.
+- `ModuleServiceProvider` updated for Laravel 12 → loads routes, migrations, and registers bindings/events.
+- IDE fixes: PSR-4 autoload
+## Estimated Time Spent
+```txt
+Approx. 6–8 hours (implementation, debugging provider, fixing Seeder/Factory, writing tests, README).
+```
 ## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced under the MIT license.
+## Author
+**Gabriel KALALA**
