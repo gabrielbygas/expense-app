@@ -4,12 +4,12 @@ namespace Modules\Expenses\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Expenses\Enums\ExpenseCategory;
-use Illuminate\Support\Str;
 
 class Expense extends Model
 {
-    use HasUuids;
+    use HasUuids, HasFactory;
 
     public $incrementing = false;
 

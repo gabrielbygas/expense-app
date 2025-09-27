@@ -19,8 +19,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadMigrationsFrom(base_path('modules/expenses/database/migrations'));
-        $this->loadRoutesFrom(base_path('modules/expenses/routes/api.php'));
-        $this->loadViewsFrom(base_path('modules/expenses/resources/views'), 'expenses');
+        //
     }
 }

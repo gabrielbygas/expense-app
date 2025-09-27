@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace Modules\Expenses\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Modules\Expenses\Events\ExpenseCreated;
@@ -28,5 +28,6 @@ class ExpensesServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Tu peux binder des services ici si besoin
+        $this->app->register(RouteServiceProvider::class);
     }
 }

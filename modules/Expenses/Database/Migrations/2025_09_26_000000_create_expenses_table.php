@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->string('title');
             $table->decimal('amount', 15, 2);
-            $table->enum('category', ['office', 'travel', 'meals', 'supplies', 'others'])->default('others');
+            $table->enum('category', ['food', 'transport', 'utilities', 'entertainment', 'other'])->default('other');
             $table->date('expense_date');
             $table->text('notes')->nullable();
             $table->timestamps();
